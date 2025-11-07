@@ -1,4 +1,3 @@
-// screens/HomeScreen.jsx
 import { StyleSheet, Text, View } from "react-native";
 
 export default function HomeScreen() {

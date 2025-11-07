@@ -1,78 +1,143 @@
-// screens/ForgotPasswordScreen.jsx
 import { useState } from "react";
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { supabase } from "../supabase"; // ✅ Make sure this path is correct
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleResetPassword = () => {
-    if (!email.trim()) {
-      Alert.alert("Error", "Please enter your email address.");
+  const handleResetPassword = async () => {
+    if (!email) {
+      Alert.alert("Missing Information", "Please enter your email address.");
       return;
     }
-    // Simulate sending reset link
-    Alert.alert(
-      "Password Reset",
-      `A reset link has been sent to ${email}`,
-      [{ text: "OK", onPress: () => navigation.navigate("Login") }]
-    );
+
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: "https://your-redirect-url.com/reset",
+    });
+
+    setLoading(false);
+
+    if (error) {
+      Alert.alert("Error", error.message);
+    } else {
+      Alert.alert(
+        "Reset Link Sent",
+        "If this email is registered, a password reset link has been sent."
+      );
+      navigation.goBack();
+    }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Enter your email"
-        placeholderTextColor="#888"
-        value={email}
-        onChangeText={setEmail}
-        keyboardType="email-address"
-      />
-      <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
-        <Text style={styles.buttonText}>Send Reset Link</Text>
-      </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-        <Text style={styles.link}>Back to Login</Text>
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <View style={styles.container}>
+          <View style={styles.card}>
+            <Text style={styles.title}>Forgot Password</Text>
+            <Text style={styles.subtitle}>
+              Enter your email to reset your password.
+            </Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your email"
+              placeholderTextColor="#666"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              value={email}
+              onChangeText={setEmail}
+            />
+
+            <TouchableOpacity
+              style={[styles.resetButton, loading && { opacity: 0.6 }]}
+              onPress={handleResetPassword}
+              disabled={loading}
+            >
+              <Text style={styles.resetButtonText}>
+                {loading ? "Sending..." : "Send Reset Link"}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.backToLogin}>← Back to Login</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  scrollContainer: { flexGrow: 1 },
   container: {
     flex: 1,
-    justifyContent: "center",
+    backgroundColor: "#B3C6AD",
     alignItems: "center",
-    backgroundColor: "#00bfa5",
-    padding: 20,
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  card: {
+    backgroundColor: "#F4EDE4",
+    width: 320,
+    borderRadius: 20,
+    padding: 30,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 8,
   },
   title: {
     fontSize: 24,
-    color: "#fff",
-    fontWeight: "bold",
+    fontWeight: "600",
+    marginBottom: 10,
+    color: "#000",
+  },
+  subtitle: {
+    fontSize: 14,
+    color: "#555",
     marginBottom: 20,
+    textAlign: "center",
   },
   input: {
     width: "100%",
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
+    height: 45,
+    backgroundColor: "#ddd",
+    borderRadius: 8,
+    paddingHorizontal: 10,
     marginBottom: 15,
   },
-  button: {
-    backgroundColor: "#00796b",
-    padding: 12,
+  resetButton: {
+    backgroundColor: "#ccc",
     borderRadius: 10,
-    width: "100%",
-    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    marginTop: 5,
+    marginBottom: 10,
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "bold",
+  resetButtonText: {
+    color: "#000",
+    fontWeight: "500",
   },
-  link: {
-    color: "#fff",
-    marginTop: 15,
+  backToLogin: {
+    color: "#0099ff",
+    fontSize: 13,
   },
 });

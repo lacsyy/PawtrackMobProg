@@ -1,6 +1,7 @@
 import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -10,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "../supabase"; // ✅ make sure path is correct
 
 export default function SignUpScreen({ navigation }) {
   const [selectedRole, setSelectedRole] = useState("Community");
@@ -19,6 +21,56 @@ export default function SignUpScreen({ navigation }) {
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
   const [location, setLocation] = useState("");
+  const [loading, setLoading] = useState(false);
+
+ const handleSignUp = async () => {
+  if (!email || !password || !fullName || !phone || !location) {
+    Alert.alert("Missing Information", "Please fill out all fields.");
+    return;
+  }
+
+  setLoading(true);
+
+  // Step 1: Create user in Supabase Auth
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+  });
+
+  if (error) {
+    setLoading(false);
+    Alert.alert("Error", error.message);
+    return;
+  }
+
+  const user = data.user;
+
+  // Step 2: Insert profile data into 'profiles' table
+  const { error: profileError } = await supabase.from("profiles").insert([
+    {
+      id: user.id,
+      full_name: fullName,
+      email,
+      phone,
+      location,
+      role: selectedRole,
+      organization: selectedRole === "Rescuer" ? organization : null,
+    },
+  ]);
+
+  setLoading(false);
+
+  if (profileError) {
+    Alert.alert("Error saving profile", profileError.message);
+  } else {
+    Alert.alert(
+      "Success!",
+      "Account created successfully. Please check your email for verification."
+    );
+    navigation.navigate("Login");
+  }
+};
+
 
   return (
     <KeyboardAvoidingView
@@ -31,7 +83,6 @@ export default function SignUpScreen({ navigation }) {
           Join our community to help animals in need
         </Text>
 
-        {/* Role Selection */}
         <Text style={styles.label}>I am a...</Text>
         <View style={styles.roleContainer}>
           <TouchableOpacity
@@ -59,7 +110,6 @@ export default function SignUpScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {/* Input Fields */}
         <View style={styles.inputContainer}>
           <Ionicons name="person" size={18} color="#888" style={styles.icon} />
           <TextInput
@@ -78,6 +128,7 @@ export default function SignUpScreen({ navigation }) {
             value={email}
             onChangeText={setEmail}
             keyboardType="email-address"
+            autoCapitalize="none"
           />
         </View>
 
@@ -113,7 +164,6 @@ export default function SignUpScreen({ navigation }) {
           />
         </View>
 
-        {/* NGO Field only if Rescuer */}
         {selectedRole === "Rescuer" && (
           <View style={styles.inputContainer}>
             <Ionicons name="business-outline" size={18} color="#888" style={styles.icon} />
@@ -126,8 +176,14 @@ export default function SignUpScreen({ navigation }) {
           </View>
         )}
 
-        <TouchableOpacity style={styles.createButton}>
-          <Text style={styles.createButtonText}>Create Account</Text>
+        <TouchableOpacity
+          style={[styles.createButton, loading && { opacity: 0.6 }]}
+          onPress={handleSignUp}
+          disabled={loading}
+        >
+          <Text style={styles.createButtonText}>
+            {loading ? "Creating Account..." : "Create Account"}
+          </Text>
         </TouchableOpacity>
 
         <Text style={styles.footer}>
@@ -146,22 +202,14 @@ export default function SignUpScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#e6f9f5" },
-  scroll: {
-    padding: 20,
-    alignItems: "center",
-    justifyContent: "center",
-  },
+  scroll: { padding: 20, alignItems: "center", justifyContent: "center" },
   logo: {
     fontSize: 22,
     fontWeight: "700",
     color: "#009688",
     marginBottom: 6,
   },
-  subtitle: {
-    color: "#666",
-    marginBottom: 20,
-    textAlign: "center",
-  },
+  subtitle: { color: "#666", marginBottom: 20, textAlign: "center" },
   roleContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -178,10 +226,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#ccc",
   },
-  selectedRole: {
-    borderColor: "#009688",
-    backgroundColor: "#e0f7f4",
-  },
+  selectedRole: { borderColor: "#009688", backgroundColor: "#e0f7f4" },
   roleTitle: { fontWeight: "bold", color: "#333", marginTop: 5 },
   roleDesc: { fontSize: 12, color: "#777" },
   inputContainer: {

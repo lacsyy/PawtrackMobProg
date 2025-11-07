@@ -83,7 +83,6 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
-// 💅 Styling
 const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
