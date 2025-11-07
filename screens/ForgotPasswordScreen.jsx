@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { supabase } from "../supabase"; // ✅ Make sure this path is correct
+import { supabase } from "../supabase";
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState("");
