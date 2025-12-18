@@ -1,3 +1,4 @@
+// screens/ForgotPasswordScreen.jsx
 import { useState } from "react";
 import {
   Alert,
@@ -23,20 +24,26 @@ export default function ForgotPasswordScreen({ navigation }) {
     }
 
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: "https://your-redirect-url.com/reset",
-    });
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: "https://your-redirect-url.com/reset", // optional for web; for mobile you can put your app link scheme
+      });
 
-    setLoading(false);
+      console.log("RESET PASSWORD:", { data, error });
 
-    if (error) {
-      Alert.alert("Error", error.message);
-    } else {
-      Alert.alert(
-        "Reset Link Sent",
-        "If this email is registered, a password reset link has been sent."
-      );
-      navigation.goBack();
+      if (error) {
+        Alert.alert("Error", error.message);
+      } else {
+        Alert.alert(
+          "Reset Link Sent",
+          "If this email is registered, a password reset link has been sent."
+        );
+        navigation.goBack();
+      }
+    } catch (e) {
+      Alert.alert("Unexpected error", e.message || String(e));
+    } finally {
+      setLoading(false);
     }
   };
 

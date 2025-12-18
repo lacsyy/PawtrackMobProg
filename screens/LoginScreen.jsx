@@ -1,3 +1,4 @@
+// screens/LoginScreen.jsx
 import { useState } from "react";
 import {
   Alert,
@@ -11,17 +12,38 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { supabase } from "../supabase";
 
 export default function LoginScreen({ navigation }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
-    if (username === "admin" && password === "1234") {
-      navigation.navigate("Home");
-    } else {
-      Alert.alert("Login Failed", "Invalid username or password");
+  const handleLogin = async () => {
+    if (!username || !password) {
+      Alert.alert("Missing fields", "Please enter email and password.");
+      return;
+    }
+    setLoading(true);
+    try {
+      console.log("LOGIN: signing in", username);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: username,
+        password,
+      });
+      console.log("LOGIN: response", { data, error });
+
+      if (error) {
+        Alert.alert("Login failed", error.message);
+      } else {
+        // success - navigate
+        navigation.navigate("Home");
+      }
+    } catch (e) {
+      Alert.alert("Unexpected error", e.message || String(e));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -41,10 +63,12 @@ export default function LoginScreen({ navigation }) {
 
             <TextInput
               style={styles.input}
-              placeholder="username"
+              placeholder="email"
               placeholderTextColor="#555"
               value={username}
               onChangeText={setUsername}
+              autoCapitalize="none"
+              keyboardType="email-address"
             />
 
             <View style={styles.passwordContainer}>
@@ -64,15 +88,21 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity style={styles.signInButton} onPress={handleLogin}>
-              <Text style={styles.signInText}>Sign In</Text>
+            <TouchableOpacity
+              style={styles.signInButton}
+              onPress={handleLogin}
+              disabled={loading}
+            >
+              <Text style={styles.signInText}>
+                {loading ? "Signing in..." : "Sign In"}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.links}>
               <TouchableOpacity onPress={() => navigation.navigate("SignUp")}>
                 <Text style={styles.link}>Sign Up</Text>
-                </TouchableOpacity>
-                 <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate("ForgotPassword")}>
                 <Text style={styles.link}>Forgot Password?</Text>
               </TouchableOpacity>
             </View>
@@ -83,10 +113,9 @@ export default function LoginScreen({ navigation }) {
   );
 }
 
+// reuse your existing styles (you can paste the same styles block you already had)
 const styles = StyleSheet.create({
-  scrollContainer: {
-    flexGrow: 1,
-  },
+  scrollContainer: { flexGrow: 1 },
   container: {
     flex: 1,
     backgroundColor: "#009688",
@@ -106,18 +135,8 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 8,
   },
-  logo: {
-    width: 100,
-    height: 100,
-    resizeMode: "contain",
-    marginBottom: 10,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "500",
-    marginBottom: 20,
-    color: "#000",
-  },
+  logo: { width: 100, height: 100, resizeMode: "contain", marginBottom: 10 },
+  title: { fontSize: 28, fontWeight: "500", marginBottom: 20, color: "#000" },
   input: {
     width: "100%",
     height: 45,
@@ -134,13 +153,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     width: "100%",
   },
-  passwordInput: {
-    flex: 1,
-    height: 45,
-  },
-  eye: {
-    fontSize: 20,
-  },
+  passwordInput: { flex: 1, height: 45 },
+  eye: { fontSize: 20 },
   signInButton: {
     backgroundColor: "#ccc",
     borderRadius: 10,
@@ -148,17 +162,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginTop: 15,
   },
-  signInText: {
-    color: "#000",
-    fontWeight: "500",
-  },
-  links: {
-    flexDirection: "row",
-    marginTop: 10,
-    gap: 20,
-  },
-  link: {
-    color: "#0099ff",
-    fontSize: 13,
-  },
+  signInText: { color: "#000", fontWeight: "500" },
+  links: { flexDirection: "row", marginTop: 10, gap: 20 },
+  link: { color: "#0099ff", fontSize: 13 },
 });
